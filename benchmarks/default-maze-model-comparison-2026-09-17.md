@@ -16,6 +16,24 @@ Each trial has 11 scored answer fields. Two seeds were tested at each size, so e
 
 Two configurations achieved identical perfect scores in this sample. Luna/high's 101×101 score is zero because it explicitly abstained on both trials. Terra/medium initially reported that the 101×101 sequences were too long for reliable manual tracking, then supplied best-effort predictions when required to complete both attempts.
 
+## Difficulty interpretation
+
+Dimensions alone did not explain the observed difficulty. The default suite used `basic + success`; later follow-ups used `advanced + mechanism-tour`, which adds ten scored fields and routes through every generated mechanism.
+
+| Profile | Atomic moves across two seeds | Astra/high | Sol/high |
+|---|---:|---:|---:|
+| 21×21, basic, success | 128–136 | 100% | 100% |
+| 21×21, advanced, mechanism-tour | 548–604 | 100% | 100% |
+| 51×51, basic, success | 598–620 | 100% | 100% |
+| 51×51, advanced, mechanism-tour | 2,548–3,612 | 95.2% | Abstained |
+| 101×101, basic, success | 2,272–2,458 | 100% | 100% |
+| 101×101, advanced, mechanism-tour | 10,682–10,824 | Abstained | Abstained |
+| 201×201, advanced, success | 6,958–6,988 | Abstained | Abstained |
+
+The clearest local predictor was realized action length combined with the number of state fields, not side length alone. `mechanism-tour` can be harder than a larger `success` trial because it revisits distant objects and exercises the full state ledger. These are two-seed observations under a strict no-programmatic-solving policy, not universal cutoffs or model rankings.
+
+For future scaling studies, report dimensions, complexity, scenario, object counts, action count, displayed-field count, question size, and completion status. Keep completion rate separate from field accuracy, and change one difficulty axis at a time.
+
 ## Method
 
 - Package: `maze-test` 0.3.0
@@ -243,6 +261,87 @@ Tuple order:
 | 10102 | 10,682 | 1,028 lines / 130,279 bytes | `AD66, 3, 6, 992, true, true, 3, 3, 3, 5, 0, 1, 1, 1, 1, 2, 3, 21364, normal, 0, 0` |
 
 Question generation took 0.74 and 0.72 seconds respectively. Reference-answer generation took 0.84 and 0.81 seconds respectively.
+
+## 51×51 advanced mechanism-tour follow-up
+
+The same two configurations were then evaluated on two smaller trials with the mechanism settings unchanged.
+
+- Package: `maze-test` 0.4.0
+- Seeds: `5101` and `5102`
+- Rows and columns: `51×51`
+- Complexity: `advanced`
+- Scenario: `mechanism-tour`
+- Language: English
+- Braid: `0`
+- Doors/chests/traps/potions: `3 / 3 / 3 / 5`
+- Maximum attempts: `1`
+- Scored fields per trial: 21
+
+### Results
+
+| Model / reasoning | Seed 5101 | Seed 5102 | Total |
+|---|---:|---:|---:|
+| `gpt-6-astra` / high | 20/21 (95.2%) | 20/21 (95.2%) | **40/42 (95.2%)** |
+| `gpt-5.6-sol` / high | ABSTAIN — 0/21 | ABSTAIN — 0/21 | **0/42 (0%)** |
+
+Astra/high matched every field except `elapsedTime` on both trials:
+
+| Seed | Astra response | Reference | Difference |
+|---:|---:|---:|---:|
+| 5101 | 7,216 | 7,224 | −8 |
+| 5102 | 5,100 | 5,096 | +4 |
+
+Sol/high explicitly abstained on both trials.
+
+### Reference answers
+
+Tuple order:
+
+`finalPosition, keys, treasures, health, alive, reachedGoal, openedDoors, openedChests, triggeredTraps, usedPotions, blockedMoves, copperKeys, silverKeys, goldKeys, coins, gems, relics, elapsedTime, finalSpeed, speedRemaining, poisonRemaining`
+
+| Seed | Atomic moves | Question size | Reference tuple |
+|---:|---:|---:|---|
+| 5101 | 3,612 | 429 lines / 49,417 bytes | `AH28, 3, 6, 992, true, true, 3, 3, 3, 5, 0, 1, 1, 1, 1, 2, 3, 7224, normal, 0, 0` |
+| 5102 | 2,548 | 328 lines / 37,230 bytes | `AL50, 3, 6, 992, true, true, 3, 3, 3, 5, 0, 1, 1, 1, 3, 1, 2, 5096, normal, 0, 0` |
+
+The evaluated responses were fixed before either reference answer was generated. Question generation took 0.27 seconds per trial.
+
+## 21×21 advanced mechanism-tour follow-up
+
+The same complete advanced-mechanism configuration was evaluated at 21×21.
+
+- Package: `maze-test` 0.4.0
+- Seeds: `2101` and `2102`
+- Rows and columns: `21×21`
+- Complexity: `advanced`
+- Scenario: `mechanism-tour`
+- Language: English
+- Braid: `0`
+- Doors/chests/traps/potions: `3 / 3 / 3 / 5`
+- Maximum attempts: `1`
+- Scored fields per trial: 21
+
+### Results
+
+| Model / reasoning | Seed 2101 | Seed 2102 | Total |
+|---|---:|---:|---:|
+| `gpt-6-astra` / high | 21/21 (100%) | 21/21 (100%) | **42/42 (100%)** |
+| `gpt-5.6-sol` / high | 21/21 (100%) | 21/21 (100%) | **42/42 (100%)** |
+
+Both models returned identical answers, and every displayed field matched the references.
+
+### Reference answers
+
+Tuple order:
+
+`finalPosition, keys, treasures, health, alive, reachedGoal, openedDoors, openedChests, triggeredTraps, usedPotions, blockedMoves, copperKeys, silverKeys, goldKeys, coins, gems, relics, elapsedTime, finalSpeed, speedRemaining, poisonRemaining`
+
+| Seed | Atomic moves | Question size | Reference tuple |
+|---:|---:|---:|---|
+| 2101 | 548 | 139 lines / 12,977 bytes | `N14, 3, 6, 992, true, true, 3, 3, 3, 5, 0, 1, 1, 1, 1, 2, 3, 1094, slow, 2, 0` |
+| 2102 | 604 | 144 lines / 13,772 bytes | `R16, 3, 6, 992, true, true, 3, 3, 3, 5, 0, 1, 1, 1, 3, 1, 2, 1211, normal, 0, 0` |
+
+All four evaluated responses were fixed before reference generation. Question generation took 0.25 and 0.23 seconds respectively.
 
 ## Interpretation limits
 

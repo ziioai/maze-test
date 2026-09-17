@@ -23,6 +23,8 @@ Score exactly the fields displayed by the generated question. Every trial has te
 
 Advanced or customized trials can add displayed fields for each configured material key (`keysByMaterial`), each configured treasure type (`treasuresByType`), elapsed time (`elapsedTime`), final speed and its remaining instruction count (`finalSpeed`, `speedRemaining`), and remaining poison instructions (`poisonRemaining`). Score exactly the fields displayed in the question.
 
+The advanced preset with all three key materials, all three typed treasures, potions, time, speed, and poison has 21 scored fields. The numbered question about final speed requests two distinct values: `finalSpeed` and `speedRemaining`.
+
 `blockedAfterDeath` and `poisonDamage` may appear in answer JSON as diagnostic state but are not scored unless the question explicitly displays them.
 
 ## Normalization
@@ -35,6 +37,18 @@ Normalize only presentation differences that preserve an unambiguous answer:
 - Ignore surrounding whitespace and Markdown table formatting.
 
 Do not infer a missing field from an explanation. Do not award partial credit within a field. If a response gives multiple conflicting values for one field and does not identify a final choice, mark that field incorrect.
+
+## Completion status
+
+Record completion separately from field accuracy:
+
+- `completed`: the response supplies every requested field.
+- `abstained`: the evaluator explicitly declines the trial.
+- `timed out`: the run ends because of a declared time limit.
+- `truncated`: the model could not access the complete frozen question or its response was cut off.
+- `incomplete`: the response is returned but omits one or more requested fields.
+
+An abstention, timeout, or truncation scores 0 for missing fields, but it must remain visible as an outcome rather than being reported only as “wrong.” Never force a guessed answer after the benchmark policy has allowed abstention unless that retry is recorded as a separate run.
 
 ## Score
 
@@ -61,6 +75,7 @@ Use these groupings only as descriptive diagnostics; they are not independent ps
 - Spatial execution: `finalPosition`, `reachedGoal`, `blockedMoves`.
 - Resource accounting: `keys`, `treasures`, `openedDoors`, `openedChests`.
 - Event and health tracking: `health`, `alive`, `triggeredTraps`, `usedMedicines`.
+- Temporal reasoning: `elapsedTime`, `finalSpeed`, `speedRemaining`, `poisonRemaining`.
 
 ## Reproducibility record
 
@@ -74,6 +89,8 @@ For a durable result, store:
 - Exact question text.
 - Raw evaluated response.
 - Structured reference answer.
+- Completion status.
+- Realized atomic action count, displayed-field count, and question size.
 - Per-field score.
 - Timestamp and evaluated model identifier, when available.
 

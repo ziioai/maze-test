@@ -1,6 +1,6 @@
 ---
 name: maze-test
-description: Generate, reproduce, solve, and score deterministic bilingual maze reasoning tasks with the maze-test CLI. Use when creating maze questions or answer keys, evaluating an LLM's spatial reasoning and long-horizon state tracking, comparing English and Chinese performance, or reproducing a trial from its seed and parameters. Do not use for developing unrelated maze games or maintaining the maze-test package itself.
+description: Generate, calibrate, reproduce, solve, and score deterministic bilingual maze reasoning tasks with the maze-test CLI. Use when creating maze questions or answer keys, choosing evaluation difficulty, testing an LLM's spatial reasoning and long-horizon state tracking, comparing model or language performance, or reproducing a trial from its seed and parameters. Do not use for unrelated maze games or maintaining the maze-test package itself.
 license: MIT
 metadata:
   author: ziioai
@@ -38,6 +38,10 @@ Choose mechanism complexity according to the evaluation target:
 - `intermediate` for variable trap damage, typed treasures, healing, poison, and antidotes.
 - `advanced` for material-matched locks plus haste, slow, and elapsed-time reasoning.
 
+Do not use dimensions as the sole difficulty label. Complexity changes the rules; scenario determines which rules the route exercises; seed and dimensions affect realized route length. A `51×51 advanced mechanism-tour` trial can be harder than a much larger `basic success` trial.
+
+When the user asks for an easy, medium, hard, or comparative benchmark, read [references/difficulty.md](references/difficulty.md) before choosing parameters. State the complete profile you selected. Scale one axis at a time when the goal is to locate a model's capability boundary.
+
 Use `--trap-damage`, `--potion-kinds`, `--key-materials`, `--treasure-types`, `--poison-damage`, `--poison-duration`, and `--speed-duration` only when a custom rule mix is intentional. Record every override.
 
 For formal or longitudinal evaluation, first record the installed package version with `npx maze-test --version`, then pin that version in every command. Also record the requested seed and the complete option list.
@@ -53,6 +57,8 @@ Use `--format json` when a pipeline needs structured question sections. Question
 ## Collect the response
 
 Give only the generated question to the model or person being evaluated. Ask for every field listed in that generated trial and save the response verbatim before continuing.
+
+Decide before the run whether abstention is allowed and how it will be scored. Preserve `ABSTAIN`, timeouts, truncation, and incomplete outputs as outcomes; do not silently replace them with guesses. For large question text, paging the frozen question is allowed if it does not parse, transform, or solve the task.
 
 When solving the question yourself, explicitly state all requested answers before retrieving the reference answer. Explanations may be useful, but they do not replace the requested fields.
 
@@ -81,6 +87,8 @@ Report at least:
 - Package version.
 - Requested seed and, if different, effective maze seed.
 - Complete generation parameters.
+- Completion status separately from field accuracy.
+- Realized atomic action count and displayed-field count after the response is fixed.
 - Raw evaluated response when preserving an experiment record.
 - Per-field correctness and total score out of the number of displayed questions.
 - Whether the answer was fixed before the reference answer was generated.

@@ -43,6 +43,8 @@ One trial is acceptable, but repeated trials and shared seeds make comparisons m
 - The exact prompt or instructions given to the model.
 - The model's unedited response, including abstentions or incomplete answers.
 - The reference answer and field-by-field score.
+- Completion status (`completed`, `abstained`, `timed out`, or `truncated`) separately from field accuracy.
+- Realized `actionCount`, displayed-field count, and question size in lines or bytes after the response is fixed.
 - Whether the model used tools, code execution, files, memory, or external assistance.
 - Any timeout, output truncation, retry, or other condition that could affect interpretation.
 
@@ -58,6 +60,8 @@ To keep a no-tools reasoning result comparable:
 
 Tool-assisted evaluations are also welcome, but they must be clearly labeled and must describe the tools and access granted to the model. Do not combine assisted and unassisted results in one ranking without distinguishing them.
 
+Do not describe difficulty only as “small,” “large,” or “51×51 hard.” Record at least dimensions, complexity, scenario, object counts, and realized action count. Compare models on the same frozen questions, and change one difficulty axis at a time when measuring scaling behavior.
+
 ### Suggested report template
 
 ```md
@@ -70,6 +74,8 @@ Tool-assisted evaluations are also welcome, but they must be clearly labeled and
 - Reasoning setting:
 - Tool access:
 - Language and full trial parameters:
+- Completion status:
+- Atomic action count / displayed field count / question size:
 - Prompt:
 
 ## Results
@@ -140,6 +146,8 @@ benchmarks/community/YYYY-MM-DD-<模型或评测集>.md
 - 交给模型的完整提示或操作说明。
 - 模型未经修改的原始回答，包括弃答和未完成回答。
 - 标准答案、逐字段得分及具体错项。
+- 将完成状态（`completed`、`abstained`、`timed out` 或 `truncated`）与字段准确率分开记录。
+- 回答固定后记录实际 `actionCount`、问题字段数，以及题面的行数或字节数。
 - 模型是否使用工具、代码执行、文件、记忆或其他外部帮助。
 - 超时、输出截断、重试等可能影响结果解读的情况。
 
@@ -154,6 +162,8 @@ benchmarks/community/YYYY-MM-DD-<模型或评测集>.md
 5. 对题目要求的每个字段进行精确匹配评分，并说明是否进行了规范化，例如将 `yes` 与 `true` 视为等价。
 
 也欢迎提交允许工具辅助的评测，但必须明确标注，并说明模型获准使用了哪些工具和数据。请勿在没有区分的情况下，把工具辅助与纯推理成绩混在同一排名中。
+
+请勿只用“较小”“很大”或“51×51 高难度”描述题目。至少应记录尺寸、机制复杂度、情境、对象数量和实际原子行动数。比较模型时应使用同一批冻结题目；研究难度变化时，建议每次只调整一个维度。
 
 可以直接复用上面的英文报告模板。提交 Pull Request 时，建议在描述中链接报告，并说明他人如何复现。
 
