@@ -4,6 +4,8 @@
 
 [English README](./README.md)
 
+[![skills.sh](https://skills.sh/b/ziioai/maze-test)](https://skills.sh/ziioai/maze-test)
+
 迷宫由实心墙格和空心通路格组成。试题可以包含门、钥匙、宝箱、陷阱、药品房、逐格移动规则和完整可复现的行动序列。
 
 ## 特别适合测试 LLM 推理能力
@@ -27,6 +29,22 @@
 3. 要求模型回答题目中的 11 个答案字段。
 4. 使用完全相同的种子和参数生成标准答案。
 5. 按字段计算准确率，或者利用模拟轨迹分析模型的首个错误步骤。
+
+## Agent Skill
+
+从当前仓库安装名为 `maze-test` 的 Agent Skill：
+
+```sh
+npx skills add ziioai/maze-test --skill maze-test
+```
+
+仅安装到 Codex：
+
+```sh
+npx skills add ziioai/maze-test --skill maze-test --agent codex
+```
+
+该 Skill 会指导 Agent 在不泄漏答案的前提下生成题目、固定待测回答、生成参考答案、逐项评阅 11 个答案字段，并保存可复现的评测记录。
 
 ## 快速开始
 

@@ -4,6 +4,8 @@ Generate deterministic bilingual maze reasoning questions and matching answer ke
 
 [中文文档](./README-CN.md)
 
+[![skills.sh](https://skills.sh/b/ziioai/maze-test)](https://skills.sh/ziioai/maze-test)
+
 The maze uses solid wall cells and open passage cells. Trials can include doors, keys, chests, traps, medicine rooms, movement rules, and a fully reproducible action sequence.
 
 ## Built for evaluating LLM reasoning
@@ -27,6 +29,22 @@ A simple LLM evaluation protocol is:
 3. Require the model to return the eleven requested answer fields.
 4. Generate the answer key with exactly the same seed and parameters.
 5. Score exact field accuracy, or inspect the simulator trace to locate the first reasoning error.
+
+## Agent Skill
+
+Install the `maze-test` Agent Skill from this repository:
+
+```sh
+npx skills add ziioai/maze-test --skill maze-test
+```
+
+Install it specifically for Codex:
+
+```sh
+npx skills add ziioai/maze-test --skill maze-test --agent codex
+```
+
+The Skill guides an agent through leak-free question generation, response collection, reference-answer generation, exact eleven-field scoring, and reproducible result reporting.
 
 ## Quick start
 
