@@ -2,7 +2,31 @@
 
 Generate deterministic bilingual maze reasoning questions and matching answer keys from the command line or a TypeScript API.
 
+[中文文档](./README-CN.md)
+
 The maze uses solid wall cells and open passage cells. Trials can include doors, keys, chests, traps, medicine rooms, movement rules, and a fully reproducible action sequence.
+
+## Built for evaluating LLM reasoning
+
+`maze-test` is particularly well suited for testing the reasoning ability of large language models. Each trial combines several abilities in one reproducible task:
+
+- **Spatial reasoning:** reconstruct and traverse a maze described entirely in text.
+- **Long-horizon state tracking:** execute a potentially long sequence of atomic movements without losing the current position.
+- **Rule application:** distinguish walls, open and closed doors, blocked moves, and post-death behavior.
+- **Resource accounting:** collect and spend keys, open chests, and count treasures.
+- **One-time event memory:** remember which keys, traps, chests, and medicine rooms have already been used.
+- **Counterfactual-resistant evaluation:** the question and answer are generated independently from the same explicit seed and parameters, making results easy to reproduce and audit.
+- **Cross-lingual evaluation:** generate equivalent tasks in English or Chinese and vary their wording deterministically.
+
+Difficulty can be controlled through maze size, braiding, object counts, scenario, path-length threshold, and wording style. Question output is separated from the answer key, while the reference simulator provides structured answers and a complete step trace through the TypeScript API.
+
+A simple LLM evaluation protocol is:
+
+1. Generate a question and record its seed and parameters.
+2. Give only the question output to the model.
+3. Require the model to return the eleven requested answer fields.
+4. Generate the answer key with exactly the same seed and parameters.
+5. Score exact field accuracy, or inspect the simulator trace to locate the first reasoning error.
 
 ## Quick start
 
@@ -109,6 +133,8 @@ npx maze-test answer   --seed 42 --rows 15 --cols 15 --lang zh
 ```
 
 迷宫由实心墙格和空心通路格组成，并支持门、钥匙、宝箱、陷阱、药品房、逐格行动规则和独立参照模拟器。默认语言为英文，`--lang zh` 切换为中文。
+
+由于题目能够稳定复现，同时综合考察空间推理、长程状态跟踪、规则执行、资源消耗和一次性事件记忆，本工具特别适合测试大语言模型的推理能力。完整中文说明见 [README-CN.md](./README-CN.md)。
 
 ## Development
 

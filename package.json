@@ -1,6 +1,6 @@
 {
   "name": "maze-test",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Generate deterministic bilingual maze reasoning questions and answer keys.",
   "keywords": [
     "maze",
@@ -41,7 +41,8 @@
   "files": [
     "dist",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "README-CN.md"
   ],
   "sideEffects": false,
   "scripts": {

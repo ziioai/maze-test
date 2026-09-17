@@ -4,7 +4,7 @@ import process from "node:process";
 import { generateTrial } from "./trial.js";
 import type { Language, ScenarioKind, TrialOptions } from "./types.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
 type Command = "question" | "answer";
 type OutputFormat = "text" | "json";
