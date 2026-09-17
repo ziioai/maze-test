@@ -17,6 +17,14 @@ export {
   validateSolidCellMaze
 } from "./maze.js";
 export { renderCharacterMaze } from "./renderer.js";
+export {
+  defaultObjectCounts,
+  emptyMaterialCounts,
+  emptyTreasureCounts,
+  mechanismPreset,
+  resolveMechanisms,
+  totalMaterialKeys
+} from "./mechanisms.js";
 export { simulateTrial, stateKey } from "./simulator.js";
 export {
   generateAnswer,

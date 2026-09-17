@@ -2,9 +2,9 @@
 
 import process from "node:process";
 import { generateTrial } from "./trial.js";
-import type { Language, ScenarioKind, TrialOptions } from "./types.js";
+import type { KeyMaterial, Language, MechanismComplexity, PotionKind, ScenarioKind, TreasureType, TrialOptions } from "./types.js";
 
-const VERSION = "0.2.1";
+const VERSION = "0.3.0";
 
 type Command = "question" | "answer";
 type OutputFormat = "text" | "json";
@@ -125,6 +125,33 @@ function parseArguments(args: string[]): CliOptions | "help" | "version" {
       case "--medicines":
         trial.medicineCount = parseInteger(value, flag);
         break;
+      case "--potions":
+        trial.potionCount = parseInteger(value, flag);
+        break;
+      case "--complexity":
+        trial.complexity = value as MechanismComplexity;
+        break;
+      case "--trap-damage":
+        trial.trapDamages = parseIntegerList(value, flag);
+        break;
+      case "--potion-kinds":
+        trial.potionKinds = parseList(value, flag) as PotionKind[];
+        break;
+      case "--key-materials":
+        trial.keyMaterials = parseList(value, flag) as KeyMaterial[];
+        break;
+      case "--treasure-types":
+        trial.treasureTypes = parseList(value, flag) as TreasureType[];
+        break;
+      case "--poison-damage":
+        trial.poisonDamage = parseInteger(value, flag);
+        break;
+      case "--poison-duration":
+        trial.poisonDuration = parseInteger(value, flag);
+        break;
+      case "--speed-duration":
+        trial.speedDuration = parseInteger(value, flag);
+        break;
       case "--scenario":
         trial.scenario = value as ScenarioKind;
         break;
@@ -163,6 +190,16 @@ function parseNumber(value: string, flag: string): number {
   return parsed;
 }
 
+function parseList(value: string, flag: string): string[] {
+  const values = value.split(",").map((item) => item.trim()).filter(Boolean);
+  if (values.length === 0) throw new Error(`${flag} requires a non-empty comma-separated list.`);
+  return values;
+}
+
+function parseIntegerList(value: string, flag: string): number[] {
+  return parseList(value, flag).map((item) => parseInteger(item, flag));
+}
+
 function helpText(): string {
   return `maze-test ${VERSION}
 
@@ -181,11 +218,20 @@ Options:
   --rows <odd integer>     Number of rows (default: 15)
   --cols <odd integer>     Number of columns (default: 15)
   --braid <0..1>           Chance to remove a dead end (default: 0)
-  --doors <integer>        Number of doors and keys (default: 1)
-  --chests <integer>       Number of chests (default: 2)
-  --traps <integer>        Number of traps (default: 2)
-  --medicines <integer>    Number of medicine rooms (default: 2)
-  --scenario <name>        success | treasure-and-leave | death-and-stop
+  --complexity <level>     basic | intermediate | advanced (default: basic)
+  --doors <integer>        Number of doors and keys (preset-dependent)
+  --chests <integer>       Number of chests (preset-dependent)
+  --traps <integer>        Number of traps (preset-dependent)
+  --potions <integer>      Number of potions (preset-dependent)
+  --medicines <integer>    Legacy alias for --potions
+  --trap-damage <list>     Comma-separated positive damage values
+  --potion-kinds <list>    healing,poison,antidote,haste,slow
+  --key-materials <list>   copper,silver,gold
+  --treasure-types <list>  treasure,coin,gem,relic
+  --poison-damage <int>    Damage per poison tick
+  --poison-duration <int>  Poisoned instruction count
+  --speed-duration <int>   Fast/slow instruction count
+  --scenario <name>        success | treasure-and-leave | death-and-stop | mechanism-tour
                            (default: success)
   --lang <language>        en | zh (default: en)
   --style <integer>        Deterministic wording variation (default: 0)
@@ -200,6 +246,7 @@ Examples:
   npx maze-test question --seed 42 --rows 15 --cols 15
   npx maze-test answer --seed 42 --rows 15 --cols 15
   npx maze-test question --seed 42 --lang zh
+  npx maze-test question --seed 42 --complexity advanced --scenario mechanism-tour
   npx maze-test answer --seed 42 --format json
 `;
 }

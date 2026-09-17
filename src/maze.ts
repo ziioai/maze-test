@@ -1,4 +1,5 @@
 import { cell, cellKey, neighbors, sameCell } from "./coordinates.js";
+import { mechanismPreset } from "./mechanisms.js";
 import type {
   Cell,
   ChestObject,
@@ -10,6 +11,7 @@ import type {
   MazeObject,
   MazeValidation,
   MedicineObject,
+  PotionObject,
   TrapObject
 } from "./types.js";
 
@@ -19,6 +21,7 @@ export function generateSolidCellMaze(options: GenerateMazeOptions = {}): Maze {
   const seed = integerOption(options.seed ?? 1, "seed", 0);
   const requestedSeed = integerOption(options.requestedSeed ?? seed, "requestedSeed", 0);
   const braid = numberOption(options.braid ?? 0, "braid", 0, 1);
+  const mechanisms = options.mechanisms ?? mechanismPreset("basic");
   const rng = mulberry32(seed);
   const grid = Array.from({ length: rows }, () => Array<string>(cols).fill("#"));
   const logicalCells: Cell[] = [];
@@ -56,7 +59,7 @@ export function generateSolidCellMaze(options: GenerateMazeOptions = {}): Maze {
   const first = farthestFloor(cell(2, 2), terrain).cell;
   const second = farthestFloor(first, terrain).cell;
   const maze: Maze = {
-    schemaVersion: "solid-cell-maze-v3@1",
+    schemaVersion: "solid-cell-maze-v4@1",
     id: options.id ?? `solid-maze-${rows}x${cols}-${requestedSeed}`,
     seed,
     requestedSeed,
@@ -68,6 +71,7 @@ export function generateSolidCellMaze(options: GenerateMazeOptions = {}): Maze {
       columns: "letters-left-to-right",
       rows: "numbers-top-to-bottom"
     },
+    mechanisms: structuredClone(mechanisms),
     terrain,
     entry: first,
     goal: second,
@@ -81,6 +85,8 @@ export function generateSolidCellMaze(options: GenerateMazeOptions = {}): Maze {
 
 export function decorateSolidCellMaze(maze: Maze, options: DecorateMazeOptions = {}): Maze {
   const result = structuredClone(maze);
+  const mechanisms = options.mechanisms ?? maze.mechanisms ?? mechanismPreset("basic");
+  result.mechanisms = structuredClone(mechanisms);
   const decorationSeed = integerOption(options.seed ?? maze.seed + 71_311, "decoration seed", 0);
   const rng = mulberry32(decorationSeed);
   const mainPath = shortestPath(result, result.entry, result.goal);
@@ -92,14 +98,24 @@ export function decorateSolidCellMaze(maze: Maze, options: DecorateMazeOptions =
   );
   const chestCount = integerOption(options.chestCount ?? 2, "chestCount", 0);
   const trapCount = integerOption(options.trapCount ?? 2, "trapCount", 0);
-  const medicineCount = integerOption(options.medicineCount ?? 2, "medicineCount", 0);
+  const potionCount = integerOption(
+    options.potionCount ?? options.medicineCount ?? 2,
+    "potionCount",
+    0
+  );
   const doorIndices = selectGatingDoorIndices(result, mainPath, doorCount);
 
   result.doors = doorIndices.map((index, doorIndex) => {
     const position = mainPath[index];
     if (!position) throw new Error(`No path cell exists at door index ${index}.`);
     occupied.add(cellKey(position));
-    return { id: `door-${doorIndex + 1}`, position, state: "closed" as const };
+    const material = cyclicValue(mechanisms.keyMaterials, doorIndex + decorationSeed);
+    return {
+      id: `door-${doorIndex + 1}`,
+      position,
+      state: "closed" as const,
+      ...(material ? { material } : {})
+    };
   });
 
   const objects: MazeObject[] = [];
@@ -109,7 +125,13 @@ export function decorateSolidCellMaze(maze: Maze, options: DecorateMazeOptions =
     const preferredIndex = Math.max(1, Math.floor(doorIndex * 0.55));
     const position = freePathCellBefore(mainPath, preferredIndex, occupied);
     occupied.add(cellKey(position));
-    const key: KeyObject = { id: `key-${index + 1}`, type: "key", position };
+    const door = result.doors[index];
+    const key: KeyObject = {
+      id: `key-${index + 1}`,
+      type: "key",
+      position,
+      ...(door?.material ? { material: door.material } : {})
+    };
     objects.push(key);
   }
 
@@ -124,11 +146,17 @@ export function decorateSolidCellMaze(maze: Maze, options: DecorateMazeOptions =
   for (let index = 0; index < chestCount; index += 1) {
     const position = takeFree(deadEnds, result, occupied, rng, "chest");
     occupied.add(cellKey(position));
+    const treasureType = cyclicValue(mechanisms.treasureTypes, index + decorationSeed);
+    if (!treasureType) throw new Error("At least one treasure type is required.");
+    const count = 1 + (index % 3);
+    const lockMaterial = cyclicValue(mechanisms.keyMaterials, index + decorationSeed + 1);
     const chest: ChestObject = {
       id: `chest-${index + 1}`,
       type: "chest",
       position,
-      treasures: 1 + (index % 3)
+      treasures: count,
+      contents: [{ type: treasureType, count }],
+      ...(lockMaterial ? { lockMaterial } : {})
     };
     objects.push(chest);
   }
@@ -141,22 +169,45 @@ export function decorateSolidCellMaze(maze: Maze, options: DecorateMazeOptions =
       id: `trap-${index + 1}`,
       type: "trap",
       position,
-      damage: 1
+      damage: mechanisms.trapDamages[index % mechanisms.trapDamages.length] ?? 1
     };
     objects.push(trap);
   }
 
-  const medicineCandidates = shuffle(rng, floorCells(result));
-  for (let index = 0; index < medicineCount; index += 1) {
-    const position = takeFree(medicineCandidates, result, occupied, rng, "medicine");
+  const potionCandidates = shuffle(rng, floorCells(result));
+  for (let index = 0; index < potionCount; index += 1) {
+    const position = takeFree(potionCandidates, result, occupied, rng, "potion");
     occupied.add(cellKey(position));
-    const medicine: MedicineObject = {
-      id: `medicine-${index + 1}`,
-      type: "medicine",
+    if (
+      mechanisms.complexity === "basic" &&
+      mechanisms.potionKinds.length === 1 &&
+      mechanisms.potionKinds[0] === "healing"
+    ) {
+      const medicine: MedicineObject = {
+        id: `medicine-${index + 1}`,
+        type: "medicine",
+        position,
+        recovery: 1
+      };
+      objects.push(medicine);
+      continue;
+    }
+    const kind = mechanisms.potionKinds[index % mechanisms.potionKinds.length];
+    if (!kind) throw new Error("At least one potion kind is required.");
+    const potion: PotionObject = {
+      id: `potion-${index + 1}`,
+      type: "potion",
       position,
-      recovery: 1
+      kind,
+      ...(kind === "healing" ? { potency: 1 + (index % 2) } : {}),
+      ...(kind === "poison"
+        ? { potency: mechanisms.poisonDamage, duration: mechanisms.poisonDuration }
+        : {}),
+      ...(kind === "haste" || kind === "slow"
+        ? { duration: mechanisms.speedDuration }
+        : {})
     };
-    objects.push(medicine);
+    objects.push(potion);
   }
 
   result.objects = objects;
@@ -259,6 +310,8 @@ export function validateSolidCellMaze(maze: Maze): MazeValidation {
     if (!key) errors.push(`Missing a key for ${door.id}.`);
     else if (keyIndex === undefined || doorIndex === undefined || keyIndex >= doorIndex) {
       errors.push(`${key.id} is not before ${door.id} on the main path.`);
+    } else if (door.material !== (key.type === "key" ? key.material : undefined)) {
+      errors.push(`${key.id} does not match the material of ${door.id}.`);
     }
   }
   return { valid: errors.length === 0, errors, metrics };
@@ -542,6 +595,11 @@ function shuffle<T>(rng: () => number, input: readonly T[]): T[] {
     values[target] = prior;
   }
   return values;
+}
+
+function cyclicValue<T>(values: readonly T[], index: number): T | undefined {
+  if (values.length === 0) return undefined;
+  return values[((index % values.length) + values.length) % values.length];
 }
 
 function mulberry32(seed: number): () => number {

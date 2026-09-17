@@ -24,7 +24,9 @@ test("seed 42 preserves a stable regression result", () => {
   assert.deepEqual(trial.result.answers, {
     finalPosition: "H6",
     keys: 0,
+    keysByMaterial: { copper: 0, silver: 0, gold: 0 },
     treasures: 0,
+    treasuresByType: { treasure: 0, coin: 0, gem: 0, relic: 0 },
     health: 3,
     alive: true,
     reachedGoal: true,
@@ -32,6 +34,12 @@ test("seed 42 preserves a stable regression result", () => {
     openedChests: 0,
     triggeredTraps: 2,
     usedMedicines: 2,
+    usedPotions: 0,
+    elapsedTime: 76,
+    finalSpeed: "normal",
+    speedRemaining: 0,
+    poisonDamage: 0,
+    poisonRemaining: 0,
     blockedMoves: 0,
     blockedAfterDeath: 0
   });
@@ -42,6 +50,21 @@ test("question and answer render in English by default and in Chinese on request
   assert.match(generateAnswer({ seed: 7 }), /^# Answer Key/u);
   assert.match(generateQuestion({ seed: 7, language: "zh" }), /^# 迷宫试题/u);
   assert.match(generateAnswer({ seed: 7, language: "zh" }), /^# 标准答案/u);
+});
+
+test("wording exposes only mechanisms that exist in the generated trial", () => {
+  const basic = generateTrial({ seed: 8, complexity: "basic", scenario: "treasure-and-leave" });
+  assert.match(basic.sections.questions, /medicine rooms/u);
+  assert.doesNotMatch(basic.sections.questions, /potions were drunk/u);
+  assert.doesNotMatch(basic.sections.rules, /Poison starts/u);
+  assert.doesNotMatch(basic.sections.rules, /time units according to/u);
+  assert.match(basic.sections.rules, /Starting at the entry does not count as entering/u);
+
+  const advanced = generateTrial({ seed: 5, complexity: "advanced", scenario: "mechanism-tour" });
+  assert.match(advanced.sections.questions, /potions were drunk/u);
+  assert.doesNotMatch(advanced.sections.questions, /medicine rooms/u);
+  assert.match(advanced.sections.rules, /antidote potion/u);
+  assert.match(advanced.sections.rules, /haste potion sets speed to fast/u);
 });
 
 test("the stored answer is reproducible by the independent simulator", () => {
@@ -93,4 +116,51 @@ test("invalid dimensions and scenario requirements fail clearly", () => {
     () => generateTrial({ scenario: "death-and-stop", trapCount: 0 }),
     /requires at least one trap/u
   );
+});
+
+test("advanced mechanism-tour exercises every configured mechanism", () => {
+  const trial = generateTrial({ seed: 42, complexity: "advanced", scenario: "mechanism-tour" });
+  assert.equal(trial.options.doorCount, 3);
+  assert.equal(trial.options.potionCount, 5);
+  assert.deepEqual(new Set(trial.maze.doors.map((item) => item.material)), new Set(["copper", "silver", "gold"]));
+  assert.deepEqual(new Set(trial.maze.objects.filter((item) => item.type === "trap").map((item) => item.damage)), new Set([1, 2, 3]));
+  assert.deepEqual(new Set(trial.maze.objects.filter((item) => item.type === "potion").map((item) => item.kind)), new Set(["healing", "poison", "antidote", "haste", "slow"]));
+  assert.deepEqual(new Set(trial.maze.objects.filter((item) => item.type === "chest").flatMap((item) => item.contents.map((content) => content.type))), new Set(["coin", "gem", "relic"]));
+  assert.equal(trial.result.answers.openedDoors, 3);
+  assert.equal(trial.result.answers.openedChests, 3);
+  assert.equal(trial.result.answers.triggeredTraps, 3);
+  assert.equal(trial.result.answers.usedPotions, 5);
+  assert.ok(trial.result.answers.elapsedTime > trial.actions.length);
+
+  const poisonStep = trial.result.trace.findIndex((item) => item.events.some((event) => event.type === "drink-potion" && event.potionKind === "poison"));
+  assert.ok(poisonStep >= 0);
+  assert.equal(trial.result.trace[poisonStep].events.some((event) => event.type === "poison-tick"), false);
+  assert.equal(trial.result.trace[poisonStep + 1].events.some((event) => event.type === "poison-tick"), true);
+
+  const hasteStep = trial.result.trace.findIndex((item) => item.events.some((event) => event.type === "drink-potion" && event.potionKind === "haste"));
+  assert.equal(trial.result.trace[hasteStep].after.speedRemaining, 4);
+  assert.equal(trial.result.trace[hasteStep + 1].before.speed, "fast");
+  assert.equal(trial.result.trace[hasteStep + 1].after.elapsedTime - trial.result.trace[hasteStep + 1].before.elapsedTime, 1);
+});
+
+test("intermediate and custom mechanism settings are deterministic", () => {
+  const options = {
+    seed: 9,
+    complexity: "intermediate",
+    scenario: "mechanism-tour",
+    trapDamages: [2, 4],
+    trapCount: 2,
+    potionKinds: ["healing", "poison"],
+    potionCount: 2,
+    treasureTypes: ["coin", "relic"],
+    chestCount: 2,
+    poisonDamage: 2,
+    poisonDuration: 2
+  };
+  const first = generateTrial(options);
+  const second = generateTrial(options);
+  assert.deepEqual(first, second);
+  assert.deepEqual(first.maze.objects.filter((item) => item.type === "trap").map((item) => item.damage), [2, 4]);
+  assert.equal(first.result.answers.usedPotions, 2);
+  assert.equal(first.result.answers.openedChests, 2);
 });

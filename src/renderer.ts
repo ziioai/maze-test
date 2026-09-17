@@ -2,7 +2,7 @@ import { cell, cellKey, columnLabel, sameCell } from "./coordinates.js";
 import { terrainAt } from "./maze.js";
 import type { Language, Maze } from "./types.js";
 
-const SYMBOLS = { key: "K", chest: "B", trap: "T", medicine: "H" } as const;
+const SYMBOLS = { key: "K", chest: "B", trap: "T", medicine: "H", potion: "P" } as const;
 
 export function renderCharacterMaze(maze: Maze, language: Language = "en"): string {
   const rowWidth = String(maze.rows).length;
@@ -32,8 +32,8 @@ export function renderCharacterMaze(maze: Maze, language: Language = "en"): stri
   lines.push("");
   lines.push(
     language === "zh"
-      ? "图例：实心方块为墙格；空白为通路格；S入口；G终点；D门；K钥匙；B宝箱；T陷阱；H药品房。左上角为A1。"
-      : "Legend: solid blocks are walls; blank cells are passages; S entry; G goal; D door; K key; B chest; T trap; H medicine room. The top-left cell is A1."
+      ? "图例：实心方块为墙格；空白为通路格；S入口；G终点；D门；K钥匙；B宝箱；T陷阱；H药品房；P药水。左上角为A1。"
+      : "Legend: solid blocks are walls; blank cells are passages; S entry; G goal; D door; K key; B chest; T trap; H medicine room; P potion. The top-left cell is A1."
   );
   return `${lines.join("\n")}\n`;
 }

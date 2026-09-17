@@ -2,9 +2,9 @@
 
 Use this reference after the evaluated response has been fixed and the reference answer has been generated.
 
-## Standard answer fields
+## Displayed answer fields
 
-Score these eleven fields independently:
+Score exactly the fields displayed by the generated question. Every trial has ten common fields; it then displays either medicine rooms or potions according to the generated objects, plus any configured material-key, typed-treasure, time, speed, and poison fields.
 
 | # | Question | JSON field | Type |
 |---:|---|---|---|
@@ -17,10 +17,13 @@ Score these eleven fields independently:
 | 7 | Doors opened | `openedDoors` | Integer |
 | 8 | Chests opened | `openedChests` | Integer |
 | 9 | Traps triggered | `triggeredTraps` | Integer |
-| 10 | Medicine rooms used | `usedMedicines` | Integer |
+| 10 | Medicine rooms used, when displayed | `usedMedicines` | Integer |
+| 10 | Potions drunk, when displayed | `usedPotions` | Integer |
 | 11 | Moves that did not change position | `blockedMoves` | Integer |
 
-`blockedAfterDeath` may appear in answer JSON but is diagnostic metadata, not a standard scored field.
+Advanced or customized trials can add displayed fields for each configured material key (`keysByMaterial`), each configured treasure type (`treasuresByType`), elapsed time (`elapsedTime`), final speed and its remaining instruction count (`finalSpeed`, `speedRemaining`), and remaining poison instructions (`poisonRemaining`). Score exactly the fields displayed in the question.
+
+`blockedAfterDeath` and `poisonDamage` may appear in answer JSON as diagnostic state but are not scored unless the question explicitly displays them.
 
 ## Normalization
 
@@ -38,7 +41,7 @@ Do not infer a missing field from an explanation. Do not award partial credit wi
 Award one point for each exact normalized match:
 
 ```text
-score = correct fields / 11
+score = correct displayed fields / displayed field count
 ```
 
 Report both the integer score and percentage. Preserve the per-field comparison so that aggregate scores remain auditable.
