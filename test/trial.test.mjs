@@ -6,6 +6,7 @@ import {
   generateQuestion,
   generateTrial,
   letterNumberCoordinate,
+  shortestPath,
   simulateTrial,
   validateSolidCellMaze
 } from "../dist/index.js";
@@ -108,6 +109,20 @@ test("braided mazes search deterministically for a valid decorated maze", () => 
   assert.equal(first.maze.seed, second.maze.seed);
   assert.deepEqual(first.maze.terrain, second.maze.terrain);
   assert.equal(validateSolidCellMaze(first.maze).valid, true);
+});
+
+test("every selected door is an actual entry-goal separator", () => {
+  for (const braid of [0, 0.1, 0.35]) {
+    for (let seed = 0; seed < 5; seed += 1) {
+      const trial = generateTrial({ seed, rows: 31, cols: 31, braid, doorCount: 3 });
+      for (const door of trial.maze.doors) {
+        assert.deepEqual(
+          shortestPath(trial.maze, trial.maze.entry, trial.maze.goal, door.position),
+          []
+        );
+      }
+    }
+  }
 });
 
 test("invalid dimensions and scenario requirements fail clearly", () => {

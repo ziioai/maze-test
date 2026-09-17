@@ -178,6 +178,12 @@ pnpm check
 
 构建结果同时包含 ESM、CommonJS、类型声明和 source map。
 
+## 参与贡献
+
+欢迎通过 GitHub 提交错误报告、规则和文案改进、新机制、测试、文档，以及可复现的模型评测成绩。开发流程和评测报告要求请参阅 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
+当前的模型对比报告位于 [`benchmarks/`](./benchmarks/default-maze-model-comparison-2026-09-17.md)。欢迎提交任何模型、任何平台的结果；报告需要保留原始回答，并记录准确的模型、推理设置、试题参数、工具权限和评分方式。
+
 ## 许可证
 
 [MIT](./LICENSE) © ziioai

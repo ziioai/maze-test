@@ -191,6 +191,12 @@ pnpm check
 
 The build emits ESM, CommonJS, type declarations, and source maps to `dist/`.
 
+## Contributing
+
+Bug reports, rule and wording improvements, new mechanisms, tests, documentation, and reproducible model evaluation results are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development workflow and benchmark submission requirements.
+
+The current comparison report is available under [`benchmarks/`](./benchmarks/default-maze-model-comparison-2026-09-17.md). Results from any model or platform are welcome; scores should preserve the raw response and document the exact model, reasoning setting, parameters, tool access, and scoring method.
+
 ## License
 
 [MIT](./LICENSE) © ziioai

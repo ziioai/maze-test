@@ -222,7 +222,8 @@ export function analyzeSolidCellMaze(maze: Maze): MazeMetrics {
   const distances = bfsDistances(maze.entry, graph);
   const degreeValues = [...graph.values()].map((items) => items.length);
   const edgeCount = degreeValues.reduce((sum, value) => sum + value, 0) / 2;
-  const mainPath = shortestPath(maze, maze.entry, maze.goal);
+  const mainPath = shortestPathInGraph(graph, maze.entry, maze.goal);
+  const entryGoalSeparators = separatingCellKeys(graph, maze.entry, maze.goal);
   const objectCounts: Partial<Record<MazeObject["type"], number>> = {};
   for (const object of maze.objects ?? []) {
     objectCounts[object.type] = (objectCounts[object.type] ?? 0) + 1;
@@ -240,7 +241,7 @@ export function analyzeSolidCellMaze(maze: Maze): MazeMetrics {
     entryGoalDistance: mainPath.length > 0 ? mainPath.length - 1 : null,
     doorCount: maze.doors.length,
     gatingDoorCount: maze.doors.filter(
-      (door) => shortestPath(maze, maze.entry, maze.goal, door.position).length === 0
+      (door) => entryGoalSeparators.has(cellKey(door.position))
     ).length,
     objectCounts
   };
@@ -325,6 +326,10 @@ export function shortestPath(
 ): Cell[] {
   if (excludedCell && (sameCell(start, excludedCell) || sameCell(goal, excludedCell))) return [];
   const graph = adjacency(maze, excludedCell);
+  return shortestPathInGraph(graph, start, goal);
+}
+
+function shortestPathInGraph(graph: Map<string, Cell[]>, start: Cell, goal: Cell): Cell[] {
   const queue = [start];
   const parent = new Map<string, string | null>([[cellKey(start), null]]);
   const values = new Map([[cellKey(start), start]]);
@@ -473,12 +478,14 @@ function degreeMap(maze: Maze): Map<string, number> {
 
 function selectGatingDoorIndices(maze: Maze, mainPath: Cell[], count: number): number[] {
   if (count === 0) return [];
-  const degrees = degreeMap(maze);
+  const graph = adjacency(maze);
+  const separators = separatingCellKeys(graph, maze.entry, maze.goal);
   const candidates: number[] = [];
   for (let index = 3; index < mainPath.length - 3; index += 1) {
     const pathCell = mainPath[index];
-    if (!pathCell || (degrees.get(cellKey(pathCell)) ?? 0) !== 2) continue;
-    if (shortestPath(maze, maze.entry, maze.goal, pathCell).length === 0) candidates.push(index);
+    if (!pathCell) continue;
+    const key = cellKey(pathCell);
+    if ((graph.get(key)?.length ?? 0) === 2 && separators.has(key)) candidates.push(index);
   }
   if (candidates.length < count) {
     throw new Error(`Only ${candidates.length} non-bypassable path cells are available for ${count} doors.`);
@@ -496,6 +503,72 @@ function selectGatingDoorIndices(maze: Maze, mainPath: Cell[], count: number): n
   }
   if (selected.length !== count) throw new Error(`Could not space ${count} doors along the main path.`);
   return selected.sort((left, right) => left - right);
+}
+
+function separatingCellKeys(
+  graph: Map<string, Cell[]>,
+  start: Cell,
+  goal: Cell
+): Set<string> {
+  const startKey = cellKey(start);
+  const goalKey = cellKey(goal);
+  if (!graph.has(startKey) || !graph.has(goalKey)) return new Set();
+
+  const discovered = new Map<string, number>();
+  const low = new Map<string, number>();
+  const parent = new Map<string, string | null>([[startKey, null]]);
+  const stack: Array<{ key: string; nextNeighbor: number }> = [
+    { key: startKey, nextNeighbor: 0 }
+  ];
+  let order = 1;
+  discovered.set(startKey, order);
+  low.set(startKey, order);
+
+  while (stack.length > 0) {
+    const frame = stack.at(-1);
+    if (!frame) break;
+    const adjacent = graph.get(frame.key) ?? [];
+    const next = adjacent[frame.nextNeighbor];
+    if (next) {
+      frame.nextNeighbor += 1;
+      const nextKey = cellKey(next);
+      if (!discovered.has(nextKey)) {
+        order += 1;
+        discovered.set(nextKey, order);
+        low.set(nextKey, order);
+        parent.set(nextKey, frame.key);
+        stack.push({ key: nextKey, nextNeighbor: 0 });
+        continue;
+      }
+      if (nextKey !== parent.get(frame.key)) {
+        low.set(frame.key, Math.min(low.get(frame.key) ?? order, discovered.get(nextKey) ?? order));
+      }
+      continue;
+    }
+
+    stack.pop();
+    const parentKey = parent.get(frame.key);
+    if (parentKey) {
+      low.set(parentKey, Math.min(low.get(parentKey) ?? order, low.get(frame.key) ?? order));
+    }
+  }
+
+  if (!discovered.has(goalKey)) return new Set();
+  const separators = new Set<string>();
+  let childKey = goalKey;
+  while (childKey !== startKey) {
+    const parentKey = parent.get(childKey);
+    if (!parentKey) break;
+    if (
+      parentKey !== startKey &&
+      (low.get(childKey) ?? Number.POSITIVE_INFINITY) >=
+        (discovered.get(parentKey) ?? Number.NEGATIVE_INFINITY)
+    ) {
+      separators.add(parentKey);
+    }
+    childKey = parentKey;
+  }
+  return separators;
 }
 
 function freePathCellBefore(mainPath: Cell[], preferredIndex: number, occupied: Set<string>): Cell {
